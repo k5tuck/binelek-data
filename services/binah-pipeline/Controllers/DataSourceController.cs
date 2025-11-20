@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Binah.Contracts.Common;
 using Binah.Pipeline.Data;
 using Binah.Pipeline.Models;
-using System.Text.Json;
 
 namespace Binah.Pipeline.Controllers;
 
@@ -77,9 +76,7 @@ public class DataSourceController : ControllerBase
                 Id = ds.Id.ToString(),
                 Name = ds.Name,
                 Type = ds.Type,
-                Config = string.IsNullOrEmpty(ds.Configuration)
-                    ? new Dictionary<string, object>()
-                    : JsonSerializer.Deserialize<Dictionary<string, object>>(ds.Configuration) ?? new(),
+                Config = ds.Configuration ?? new Dictionary<string, object>(),
                 Status = "disconnected", // Status would come from connection testing
                 LastTested = null,
                 CreatedAt = ds.CreatedAt
@@ -121,9 +118,7 @@ public class DataSourceController : ControllerBase
             Id = ds.Id.ToString(),
             Name = ds.Name,
             Type = ds.Type,
-            Config = string.IsNullOrEmpty(ds.Configuration)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(ds.Configuration) ?? new(),
+            Config = ds.Configuration ?? new Dictionary<string, object>(),
             Status = "disconnected",
             LastTested = null,
             CreatedAt = ds.CreatedAt
@@ -163,7 +158,7 @@ public class DataSourceController : ControllerBase
             TenantId = tenantId,
             Name = request.Name,
             Type = request.Type,
-            Configuration = JsonSerializer.Serialize(request.Config),
+            Configuration = request.Config,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -217,7 +212,7 @@ public class DataSourceController : ControllerBase
         }
 
         if (!string.IsNullOrEmpty(request.Name)) ds.Name = request.Name;
-        if (request.Config != null) ds.Configuration = JsonSerializer.Serialize(request.Config);
+        if (request.Config != null) ds.Configuration = request.Config;
         ds.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -227,9 +222,7 @@ public class DataSourceController : ControllerBase
             Id = ds.Id.ToString(),
             Name = ds.Name,
             Type = ds.Type,
-            Config = string.IsNullOrEmpty(ds.Configuration)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(ds.Configuration) ?? new(),
+            Config = ds.Configuration ?? new Dictionary<string, object>(),
             Status = "disconnected",
             CreatedAt = ds.CreatedAt
         });
