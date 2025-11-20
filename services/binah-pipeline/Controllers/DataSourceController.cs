@@ -65,12 +65,14 @@ public class DataSourceController : ControllerBase
                 : Forbid();
         }
 
-        var dataSources = await _dbContext.DataSources
+        var dataSourcesRaw = await _dbContext.DataSources
             .Where(ds => ds.TenantId == tenantId)
             .OrderByDescending(ds => ds.CreatedAt)
             .Skip(skip)
             .Take(limit)
-            .Select(ds => new DataSourceResponse
+            .ToListAsync();
+
+        var dataSources = dataSourcesRaw.Select(ds => new DataSourceResponse
             {
                 Id = ds.Id.ToString(),
                 Name = ds.Name,
@@ -82,7 +84,7 @@ public class DataSourceController : ControllerBase
                 LastTested = null,
                 CreatedAt = ds.CreatedAt
             })
-            .ToListAsync();
+            .ToList();
 
         return Ok(dataSources);
     }
