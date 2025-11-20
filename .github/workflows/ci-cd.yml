@@ -37,8 +37,8 @@ jobs:
     - name: Build binah-context
       run: dotnet build services/binah-context/Binah.Context.csproj --no-restore --configuration Release
 
-    - name: Run binah-context tests
-      run: dotnet test services/binah-context/Tests/Binah.Context.Tests.csproj --no-build --configuration Release --verbosity normal
+    - name: Build and test binah-context
+      run: dotnet test services/binah-context/Tests/Binah.Context.Tests.csproj --no-restore --configuration Release --verbosity normal
 
     - name: Setup Python
       uses: actions/setup-python@v5
