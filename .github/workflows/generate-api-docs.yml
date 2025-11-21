@@ -1,0 +1,167 @@
+name: Generate API Documentation
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to generate docs for (or "all")'
+        default: 'all'
+
+jobs:
+  generate-binah-search-docs:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.service == 'binah-search' || github.event.inputs.service == 'all') ||
+      github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          cd services/binah-search
+          pip install -r requirements.txt
+          pip install -r requirements-docs.txt
+      - name: Generate module documentation
+        run: |
+          cd services/binah-search/docs
+          sphinx-apidoc -o . ../app --force
+      - name: Build documentation
+        run: |
+          cd services/binah-search/docs
+          make html
+      - name: Package documentation
+        run: |
+          cd services/binah-search/docs/_build/html
+          tar -czf ../../../../binah-search-docs.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binah-search-docs
+          path: services/binah-search/binah-search-docs.tar.gz
+          retention-days: 90
+      - name: Get short SHA
+        id: sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+      - name: Create Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: binah-search-docs-${{ steps.sha.outputs.SHORT_SHA }}
+          name: "Binah Search API Docs"
+          files: services/binah-search/binah-search-docs.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger binelek-docs update
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: k5tuck/binelek-docs
+          event-type: api-docs-updated
+          client-payload: '{"service": "binah-search"}'
+        continue-on-error: true
+
+  generate-binah-context-docs:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.service == 'binah-context' || github.event.inputs.service == 'all') ||
+      github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet tool install -g docfx
+      - name: Generate Documentation
+        run: |
+          cd services/binah-context
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          docfx docfx.json
+      - name: Package Documentation
+        run: |
+          cd services/binah-context/_site
+          tar -czf ../../binah-context-docs.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binah-context-docs
+          path: services/binah-context/binah-context-docs.tar.gz
+          retention-days: 90
+      - name: Get short SHA
+        id: sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+      - name: Create Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: binah-context-docs-${{ steps.sha.outputs.SHORT_SHA }}
+          name: "Binah Context API Docs"
+          files: services/binah-context/binah-context-docs.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger binelek-docs update
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: k5tuck/binelek-docs
+          event-type: api-docs-updated
+          client-payload: '{"service": "binah-context"}'
+        continue-on-error: true
+
+  generate-binah-pipeline-docs:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.service == 'binah-pipeline' || github.event.inputs.service == 'all') ||
+      github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet tool install -g docfx
+      - name: Generate Documentation
+        run: |
+          cd services/binah-pipeline
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          docfx docfx.json
+      - name: Package Documentation
+        run: |
+          cd services/binah-pipeline/_site
+          tar -czf ../../binah-pipeline-docs.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binah-pipeline-docs
+          path: services/binah-pipeline/binah-pipeline-docs.tar.gz
+          retention-days: 90
+      - name: Get short SHA
+        id: sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+      - name: Create Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: binah-pipeline-docs-${{ steps.sha.outputs.SHORT_SHA }}
+          name: "Binah Pipeline API Docs"
+          files: services/binah-pipeline/binah-pipeline-docs.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger binelek-docs update
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: k5tuck/binelek-docs
+          event-type: api-docs-updated
+          client-payload: '{"service": "binah-pipeline"}'
+        continue-on-error: true
